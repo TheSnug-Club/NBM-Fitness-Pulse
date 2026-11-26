@@ -1,12 +1,14 @@
 # NBM Fitness Pulse
 
+**Live demo: [thesnug-club.github.io/NBM-Fitness-Pulse](https://thesnug-club.github.io/NBM-Fitness-Pulse/)**
+
 An interactive tablet prototype for a gym-equipment check-in kiosk. The screen is mounted on a single machine, Treadmill 04 in the cardio zone of a fictional gym called Riverside Fitness, and a member taps it on their way onto the machine.
 
 The whole thing is one self-contained HTML file. There is no build step, no package manager and no network calls. Open `index.html` in a browser and it runs.
 
 ## Running it
 
-Double-click `index.html`, or serve the folder if you prefer a real origin:
+The live demo above is this same file, served by GitHub Pages from `main`. To run it yourself, double-click `index.html`, or serve the folder if you prefer a real origin:
 
 ```
 python3 -m http.server 8000
