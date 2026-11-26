@@ -2,6 +2,8 @@
 
 **Live demo: [thesnug-club.github.io/NBM-Fitness-Pulse](https://thesnug-club.github.io/NBM-Fitness-Pulse/)**
 
+**Case study: [NBM Fitness Pulse showcase.pdf](NBM%20Fitness%20Pulse%20showcase.pdf)** &middot; eight pages covering the flow screen by screen, the features and the case for building it.
+
 An interactive tablet prototype for a gym-equipment check-in kiosk. The screen is mounted on a single machine, Treadmill 04 in the cardio zone of a fictional gym called Riverside Fitness, and a member taps it on their way onto the machine.
 
 The whole thing is one self-contained HTML file. There is no build step, no package manager and no network calls. Open `index.html` in a browser and it runs.
