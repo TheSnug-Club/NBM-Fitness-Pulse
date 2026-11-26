@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NBM Fitness Pulse — Tablet Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============ TOKENS ============
+     Layout idea: a dark, vividly multicolor "sport-arcade" kiosk theme —
+     deep violet base, four bright accents (violet/pink/teal/gold), bouncy
+     rounded display type — replacing the prior near-black + single lime
+     look with something that reads as genuinely more fun to tap through,
+     while staying legible under harsh gym lighting. Single committed
+     visual world: no light/dark toggle. */
+  :root{
+    --bg-deep:#0f0a1f;
+    --bezel:#140d26;
+    --surface:#1d1440;
+    --surface-raised:#271a52;
+    --surface-soft:rgba(255,255,255,0.07);
+    --surface-soft-2:rgba(255,255,255,0.11);
+    --border:rgba(255,255,255,0.13);
+    --border-strong:rgba(255,255,255,0.22);
+    --ink:#fbf8ff;
+    --ink-soft:#cabfea;
+    --ink-faint:#9488b8;
+    --violet:#9163ff;
+    --violet-ink:#17102e;
+    --pink:#ff5fa8;
+    --pink-ink:#2e0f20;
+    --teal:#2bddc2;
+    --teal-ink:#07241f;
+    --gold:#ffc24e;
+    --gold-ink:#2e1c04;
+    --coral:#ff6a5e;
+    --coral-ink:#300d0a;
+    --grad-cta:linear-gradient(135deg,#9163ff 0%,#ff5fa8 100%);
+    --grad-gold:linear-gradient(135deg,#ffc24e 0%,#ff8a4e 100%);
+    --shadow-pop:0 14px 30px rgba(20,10,45,0.55);
+    --radius-lg:28px;
+    --radius-md:18px;
+    --radius-sm:12px;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 620px at 18% -8%, rgba(145,99,255,0.35), transparent 60%),
+      radial-gradient(ellipse 760px 560px at 106% 18%, rgba(255,95,168,0.28), transparent 55%),
+      radial-gradient(ellipse 700px 600px at 50% 112%, rgba(43,221,194,0.18), transparent 55%),
+      var(--bg-deep);
+    font-family:'Plus Jakarta Sans', system-ui, sans-serif;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  button{font-family:inherit;cursor:pointer;color:inherit;}
+  a{color:inherit;}
+  .display{font-family:'Fredoka',system-ui,sans-serif;}
+  .tabular{font-variant-numeric:tabular-nums;}
+
+  /* ---------- Device frame ---------- */
+  .device{
+    width:520px;
+    height:832px;
+    background:var(--bezel);
+    border-radius:46px;
+    padding:14px;
+    box-shadow:0 40px 90px rgba(5,2,15,0.6), inset 0 0 0 1px rgba(255,255,255,0.05);
+    position:relative;
+  }
+  .device:before{
+    content:"";
+    position:absolute; left:50%; top:9px; transform:translateX(-50%);
+    width:70px; height:6px; border-radius:99px; background:rgba(255,255,255,0.14);
+  }
+  .screen{
+    width:100%; height:100%;
+    background:var(--surface);
+    border-radius:34px;
+    overflow:hidden;
+    position:relative;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .view{
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column;
+    animation:viewIn .32s cubic-bezier(.2,.8,.2,1);
+  }
+  .view.active{display:flex;}
+  @keyframes viewIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes popIn{ from{opacity:0; transform:scale(.9);} to{opacity:1; transform:scale(1);} }
+  @keyframes spin{ to{transform:rotate(360deg);} }
+  @keyframes pulseGlow{ 0%,100%{box-shadow:0 0 0 0 rgba(145,99,255,0.45);} 70%{box-shadow:0 0 0 20px rgba(145,99,255,0);} }
+  @keyframes tipCycle{ 0%,100%{opacity:0;} 8%,92%{opacity:1;} }
+  @keyframes barFill{ from{width:0%;} }
+  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-3px);} }
+  @reduced-motion{}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important;}
+  }
+
+  .btn-press{transition:transform .12s ease, filter .12s ease;}
+  .btn-press:active{transform:scale(.96); filter:brightness(.95);}
+
+  /* ---------- shared bits ---------- */
+  .icon-btn{
+    width:52px;height:52px;border-radius:16px;border:1px solid var(--border);
+    background:var(--surface-soft); display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .icon-btn svg{width:24px;height:24px;}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;
+    font-size:12px;font-weight:700;letter-spacing:.3px;
+  }
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 22px 14px;
+  }
+  .avatar{
+    width:52px;height:52px;border-radius:50%;flex-shrink:0;border:2.5px solid var(--teal);
+    overflow:hidden; background:var(--surface-raised);
+  }
+  .member-id{display:flex;align-items:center;gap:13px;}
+  .member-id .meta{display:flex;flex-direction:column;}
+  .member-id .name{font-weight:800;font-size:18px;}
+  .member-id .sub{font-size:12.5px;color:var(--ink-faint);font-weight:600;}
+  .header-icons{display:flex;gap:9px;}
+
+  .card{
+    background:var(--surface-raised);
+    border:1px solid var(--border);
+    border-radius:var(--radius-md);
+    padding:16px;
+  }
+  .section-label{
+    font-size:12px;font-weight:800;letter-spacing:1.2px;color:var(--ink-faint);
+    text-transform:uppercase;
+  }
+  .primary-btn{
+    width:100%;padding:19px;border-radius:20px;border:none;
+    background:var(--grad-cta); color:#fff; font-family:'Fredoka',sans-serif;
+    font-weight:600; font-size:19px; box-shadow:var(--shadow-pop);
+  }
+  .ghost-btn{
+    width:100%;padding:16px;border-radius:20px;border:1.5px solid var(--border-strong);
+    background:transparent;color:var(--ink-soft);font-weight:700;font-size:15.5px;
+  }
+  .scroll-area{flex:1;overflow-y:auto; padding:0 22px 22px;}
+  .scroll-area::-webkit-scrollbar{width:5px;}
+  .scroll-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px;}
+
+  .overlay{
+    position:absolute; inset:0; background:rgba(10,6,22,0.72);
+    backdrop-filter: blur(2px);
+    display:none; align-items:center; justify-content:center; padding:28px; z-index:40;
+  }
+  .overlay.active{display:flex;}
+  .popup{
+    width:100%; background:var(--surface-raised); border:1px solid var(--border-strong);
+    border-radius:26px; padding:26px 22px; animation:popIn .22s cubic-bezier(.2,.8,.2,1);
+  }
+
+  /* ---------- idle screen ---------- */
+  #view-idle{justify-content:space-between; text-align:center; padding:26px 24px 30px;}
+  .brand-mark{display:flex;flex-direction:column;align-items:center;gap:4px; margin-top:6px;}
+  .brand-mark .brandline{display:flex;align-items:center;gap:10px;}
+  .pulse-logo{width:30px;height:30px;flex-shrink:0;}
+  .brand-mark .name{font-size:27px;font-weight:700;letter-spacing:.3px;}
+  .brand-mark .sub{font-size:13px;font-weight:700;letter-spacing:5px;background:var(--grad-cta);-webkit-background-clip:text;background-clip:text;color:transparent;margin-top:1px;}
+  .brand-mark .loc{font-size:14.5px;font-weight:700;color:var(--pink);margin-top:10px;}
+  .idle-mid{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .idle-clock{font-size:66px;font-weight:600;letter-spacing:1px;}
+  .idle-date{font-size:14px;color:var(--ink-faint);font-weight:600;}
+  .tip-chip{
+    margin-top:10px; padding:11px 22px;border-radius:999px;border:1px solid var(--border);
+    background:var(--surface-soft); font-size:13.5px;font-weight:700;
+  }
+  .hygiene-chip{
+    margin-top:12px; display:inline-flex;align-items:center;gap:7px;
+    font-size:11.5px;font-weight:700;color:var(--teal);
+  }
+  .idle-bottom{display:flex;flex-direction:column;align-items:center;gap:16px;}
+  .machine-tag{
+    padding:9px 18px;border-radius:999px;background:var(--surface-soft-2);
+    font-size:13px;font-weight:800;letter-spacing:1px;color:var(--ink-soft);
+  }
+  .cta-stack{width:100%;display:flex;flex-direction:column;gap:12px;}
+  .cta-primary{
+    width:100%;padding:24px;border-radius:24px;border:none;background:var(--grad-cta);
+    color:#fff;display:flex;align-items:center;justify-content:center;gap:16px;
+    box-shadow:var(--shadow-pop); animation:pulseGlow 2.6s infinite;
+  }
+  .cta-primary span{font-family:'Fredoka',sans-serif;font-weight:600;font-size:20px;}
+  .cta-secondary{
+    width:100%;padding:22px;border-radius:24px;border:2px solid var(--border-strong);
+    background:var(--surface-soft); color:var(--ink);
+    display:flex;align-items:center;justify-content:center;gap:16px;
+  }
+  .cta-secondary span{font-family:'Fredoka',sans-serif;font-weight:600;font-size:20px;}
+  .staff-help{margin-top:4px;font-size:12px;font-weight:700;color:var(--ink-faint);text-decoration:underline;background:none;border:none;}
+
+  /* ---------- keypad ---------- */
+  #view-keypad{padding:26px 26px 30px;}
+  .keypad-top{display:flex;justify-content:space-between;}
+  .keypad-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;}
+  .id-display{font-size:15px;color:var(--ink-faint);font-weight:700;margin-bottom:10px;}
+  .id-dots{font-size:40px;font-weight:600;letter-spacing:9px;min-height:50px;}
+  .pad-grid{display:grid;grid-template-columns:repeat(3,76px);gap:14px;}
+  .pad-key{
+    width:76px;height:76px;border-radius:20px;border:1px solid var(--border);
+    background:var(--surface-soft); font-family:'Fredoka',sans-serif; font-weight:600;font-size:25px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .pad-key.accent{background:var(--grad-cta);border:none;}
+
+  /* ---------- plan steps / stage rows ---------- */
+  .step-row{display:flex;align-items:center;gap:14px;padding:15px 16px;border-radius:16px;border:1.5px solid var(--border);background:var(--surface-raised);}
+  .step-num{width:34px;height:34px;border-radius:50%;background:var(--surface-soft-2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;}
+  .step-title{font-weight:700;font-size:15.5px;}
+  .step-sub{font-size:13px;color:var(--ink-faint);margin-top:2px;}
+  .stage-chip{font-size:10.5px;font-weight:800;padding:5px 11px;border-radius:999px;flex-shrink:0;letter-spacing:.3px;}
+
+  .week-row{display:flex;align-items:center;gap:14px;padding:13px 15px;border-radius:14px;}
+  .week-num-label{font-size:10px;font-weight:800;color:var(--ink-faint);letter-spacing:.5px;}
+  .week-num{font-family:'Fredoka',sans-serif;font-weight:600;font-size:18px;}
+
+  .hist-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-radius:14px;background:var(--surface-raised);border:1.5px solid var(--border);}
+  .hist-row .d{font-weight:700;font-size:14.5px;}
+  .hist-row .s{font-size:12.5px;color:var(--ink-faint);margin-top:2px;}
+  .pb-badge{font-size:10.5px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--grad-gold);color:var(--gold-ink);flex-shrink:0;}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
+  .stat-tile{background:var(--surface-raised);border:1px solid var(--border);border-radius:16px;padding:13px;text-align:center;}
+  .stat-tile .l{font-size:11px;color:var(--ink-faint);font-weight:700;}
+  .stat-tile .v{font-family:'Fredoka',sans-serif;font-weight:600;font-size:19px;margin-top:4px;}
+
+  /* ---------- active session ---------- */
+  #view-active{padding:20px 22px 24px; gap:14px;}
+  .session-time-label{font-size:12px;color:var(--ink-faint);font-weight:800;letter-spacing:1.5px;text-align:center;}
+  .session-time{font-family:'Fredoka',sans-serif;font-weight:600;font-size:58px;text-align:center;}
+  .hr-row{display:flex;align-items:center;gap:11px;background:var(--surface-raised);border:1px solid var(--border);border-radius:16px;padding:13px 16px;}
+  .progress-track{width:100%;height:12px;border-radius:999px;background:var(--surface-soft-2);overflow:hidden;}
+  .progress-fill{height:100%;border-radius:999px;background:var(--grad-cta);}
+  .notice-banner{display:flex;align-items:center;gap:12px;border-radius:16px;padding:13px 15px;border:1.5px solid;}
+
+  /* ---------- summary ---------- */
+  .celebrate-card{
+    display:flex;align-items:center;gap:14px;border-radius:18px;padding:16px 18px;
+    background:linear-gradient(135deg, rgba(43,221,194,0.18), rgba(145,99,255,0.18));
+    border:1.5px solid rgba(43,221,194,0.4);
+  }
+  .celebrate-emoji{font-size:34px;line-height:1;}
+  .celebrate-msg{font-weight:700;font-size:15px;}
+  .badge-row{display:flex;align-items:center;gap:11px;border-radius:16px;padding:13px 15px;}
+
+  /* ---------- leaderboard ---------- */
+  .tab-row{display:flex;gap:7px;}
+  .tab-btn{flex:1;padding:9px 0;border-radius:11px;border:1.5px solid var(--border);background:var(--surface-soft);font-size:13px;font-weight:800;color:var(--ink-soft);}
+  .tab-btn.on{background:var(--grad-cta);border-color:transparent;color:#fff;}
+  .lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface-raised);}
+  .lb-rank{width:26px;font-family:'Fredoka',sans-serif;font-weight:600;font-size:16px;color:var(--ink-faint);text-align:center;flex-shrink:0;}
+  .lb-name{font-weight:700;font-size:14.5px;flex:1;}
+  .lb-time{font-family:'Fredoka',sans-serif;font-weight:600;font-size:14.5px;}
+  .lb-move{width:34px;display:flex;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:800;flex-shrink:0;}
+  .you-tag{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:var(--grad-cta);color:#fff;margin-left:6px;}
+
+  /* confetti canvas */
+  #confetti{position:absolute;inset:0;pointer-events:none;z-index:50;}
+
+  .idle-warning-ring{
+    width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:conic-gradient(var(--pink) calc(var(--pct,100) * 1%), var(--surface-soft-2) 0);
+  }
+  .idle-warning-ring .inner{width:106px;height:106px;border-radius:50%;background:var(--surface-raised);display:flex;align-items:center;justify-content:center;font-family:'Fredoka',sans-serif;font-size:34px;font-weight:600;}
+
+  footer.credit{
+    position:absolute; left:50%; bottom:-30px; transform:translateX(-50%);
+    font-size:11.5px; color:rgba(255,255,255,0.28); white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="screen" id="screen">
+
+    <!-- ================= IDLE ================= -->
+    <div class="view active" id="view-idle">
+      <div style="display:flex;justify-content:flex-end;gap:9px;">
+        <button class="icon-btn btn-press" onclick="go('leaderboard','idle')" aria-label="Leaderboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/></svg>
+        </button>
+        <button class="icon-btn btn-press" onclick="go('info')" aria-label="Equipment info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
+        </button>
+      </div>
+
+      <div class="brand-mark">
+        <div class="brandline">
+          <svg class="pulse-logo" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="url(#g1)" stroke-width="2"/><path d="M6 16h5l2.5-7L18 23l2.5-7H26" stroke="url(#g1)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="0" y1="0" x2="32" y2="32"><stop stop-color="#9163ff"/><stop offset="1" stop-color="#ff5fa8"/></linearGradient></defs></svg>
+          <div class="name display">NBM Fitness</div>
+        </div>
+        <div class="sub display">PULSE</div>
+        <div class="loc">📍 Riverside Fitness · Cardio Zone</div>
+      </div>
+
+      <div class="idle-mid">
+        <div class="idle-clock display tabular" id="clockText">07:42</div>
+        <div class="idle-date" id="dateText">Saturday, 22 August</div>
+        <div class="tip-chip" id="tipChip" style="color:var(--teal);">128 sessions logged today</div>
+        <div class="hygiene-chip">🧴 Last sanitized 11 min ago</div>
+      </div>
+
+      <div class="idle-bottom">
+        <div class="machine-tag">🏃 TREADMILL 04</div>
+        <div class="cta-stack">
+          <button class="cta-primary btn-press" onclick="startScan()">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="12" rx="3"/><path d="M7 11a2 2 0 012-2M7 15a6 6 0 016-6"/></svg>
+            <span>Tap Wristband</span>
+          </button>
+          <button class="cta-secondary btn-press" onclick="openOverlay('keypad')">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h.01M12 8h.01M16 8h.01M8 12h.01M12 12h.01M16 12h.01"/></svg>
+            <span>Enter Member ID</span>
+          </button>
+        </div>
+        <button class="staff-help" onclick="openOverlay('staffHelp')">Need help? Tap to call staff</button>
+      </div>
+    </div>
+
+    <!-- ================= EQUIPMENT INFO ================= -->
+    <div class="view" id="view-info">
+      <div class="topbar">
+        <div class="display" style="font-size:20px;font-weight:600;">About Treadmill 04</div>
+        <button class="icon-btn btn-press" onclick="closeInfoScreen()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="scroll-area" style="display:flex;flex-direction:column;gap:18px;">
+        <div class="card" style="display:flex;gap:15px;">
+          <div style="width:78px;height:78px;border-radius:50%;flex-shrink:0;overflow:hidden;border:3px solid var(--pink);">
+            <svg viewBox="0 0 78 78" width="78" height="78"><rect width="78" height="78" fill="#2a1b55"/><circle cx="39" cy="30" r="15" fill="#ff5fa8"/><path d="M8 80c0-21.5 14-34 31-34s31 12.5 31 34" fill="#ff5fa8"/></svg>
+          </div>
+          <div>
+            <div class="section-label" style="color:var(--pink);">Meet your trainer</div>
+            <div class="display" style="font-size:18px;font-weight:600;margin-top:4px;">Jordan Reyes</div>
+            <div style="font-size:12.5px;color:var(--ink-faint);font-weight:600;">Personal Trainer · Cardio Specialist</div>
+            <div style="font-size:13.5px;margin-top:9px;line-height:1.55;color:var(--ink-soft);">Jordan has coached endurance athletes here for six years and builds every tempo and interval programme on this treadmill zone.</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">The story behind this machine</div>
+          <div style="font-size:14px;line-height:1.6;color:var(--ink-soft);">Treadmill 04 is the zone's endurance station — a shock-absorbing deck built for longer tempo runs, with incline up to 15% for hill work.</div>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:8px;">Video guide</div>
+          <button class="card btn-press" style="padding:0;overflow:hidden;width:100%;text-align:left;" onclick="toggleVideo()">
+            <div style="position:relative;height:150px;background:linear-gradient(135deg,#2a1b55,#1d1440);display:flex;align-items:center;justify-content:center;">
+              <svg width="120" height="64" viewBox="0 0 150 80" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="20" y="48" width="90" height="16" rx="8"/><ellipse cx="65" cy="56" rx="38" ry="6"/><path d="M96 48V20a6 6 0 016-6h10"/><rect x="106" y="8" width="26" height="18" rx="3"/></svg>
+              <div id="videoPlayBtn" style="position:absolute;width:54px;height:54px;border-radius:50%;background:var(--grad-cta);display:flex;align-items:center;justify-content:center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+              </div>
+              <div style="position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(0,0,0,0.3);"><div id="videoBar" style="height:100%;width:0%;background:var(--teal);"></div></div>
+            </div>
+            <div style="padding:13px 15px;">
+              <div style="font-weight:700;font-size:14.5px;">How to use Treadmill 04 safely</div>
+              <div style="font-size:12.5px;color:var(--ink-faint);margin-top:3px;">Do's and don'ts, plus the emergency stop clip</div>
+            </div>
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div class="section-label">Quick steps</div>
+          <div class="step-row"><div class="step-num">1</div><div style="font-size:13.5px;">Tap your wristband or enter your Member ID to start</div></div>
+          <div class="step-row"><div class="step-num">2</div><div style="font-size:13.5px;">Follow your trainer's plan, or choose a free workout</div></div>
+          <div class="step-row"><div class="step-num">3</div><div style="font-size:13.5px;">Clip the safety key to your clothing before you start running</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= VERIFYING ================= -->
+    <div class="view" id="view-verifying" style="align-items:center;justify-content:center;gap:22px;">
+      <div style="width:64px;height:64px;border-radius:50%;border:5px solid var(--surface-soft-2);border-top-color:var(--pink);animation:spin 1s linear infinite;"></div>
+      <div class="display" style="font-size:17px;font-weight:600;">Verifying wristband…</div>
+      <div style="font-size:12.5px;color:var(--ink-faint);">Pulling your history for Treadmill 04</div>
+    </div>
+
+    <!-- ================= WELCOME ================= -->
+    <div class="view" id="view-welcome">
+      <div class="topbar">
+        <div class="member-id">
+          <div class="avatar"><svg viewBox="0 0 52 52"><rect width="52" height="52" fill="#2a1b55"/><circle cx="26" cy="20" r="10" fill="#2bddc2"/><path d="M5 54c0-14.4 9.4-23 21-23s21 8.6 21 23" fill="#2bddc2"/></svg></div>
+          <div class="meta"><div class="name">Alex Morgan</div><div class="sub">Treadmill 04 · Cardio Zone</div></div>
+        </div>
+        <div class="header-icons">
+          <button class="icon-btn btn-press" onclick="go('leaderboard','member')" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/></svg></button>
+          <button class="icon-btn btn-press" onclick="logout()" aria-label="Log out" style="color:var(--coral);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+        </div>
+      </div>
+      <div class="scroll-area" style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div class="display" style="font-size:24px;font-weight:600;">Welcome back, Alex</div>
+          <div style="font-size:13px;color:var(--ink-faint);margin-top:3px;">Last visit on this machine: 3 days ago</div>
+        </div>
+
+        <button class="card btn-press" style="width:100%;text-align:left;display:flex;align-items:center;gap:13px;border-color:rgba(255,194,78,0.4);" onclick="openOverlay('trainerNote')">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--grad-gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:var(--gold-ink);flex-shrink:0;">JR</div>
+          <div style="flex:1;">
+            <div style="font-size:11.5px;font-weight:800;letter-spacing:.5px;color:var(--gold);">NEW MESSAGE FROM YOUR TRAINER</div>
+            <div style="font-size:13.5px;margin-top:2px;">Jordan Reyes · tap to read</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+
+        <div>
+          <div class="section-label" style="margin-bottom:9px;">Your records on this machine</div>
+          <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="stat-tile"><div class="l">Fastest 5K</div><div class="v">22:14</div></div>
+            <div class="stat-tile"><div class="l">Longest Run</div><div class="v">12.4 km</div></div>
+            <div class="stat-tile" style="grid-column:span 2;"><div class="l">Top Speed</div><div class="v">15.2 km/h</div></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-label" style="margin-bottom:9px;">Recent sessions</div>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="welcomeHistory"></div>
+        </div>
+      </div>
+      <div style="padding:0 22px 22px;display:flex;flex-direction:column;gap:11px;">
+        <button class="primary-btn btn-press" onclick="go('plan')">View today's plan</button>
+        <button class="ghost-btn btn-press" onclick="startSession()">Skip to free workout</button>
+      </div>
+    </div>
+
+    <!-- ================= PLAN ================= -->
+    <div class="view" id="view-plan">
+      <div class="topbar">
+        <div class="member-id">
+          <div class="avatar"><svg viewBox="0 0 52 52"><rect width="52" height="52" fill="#2a1b55"/><circle cx="26" cy="20" r="10" fill="#2bddc2"/><path d="M5 54c0-14.4 9.4-23 21-23s21 8.6 21 23" fill="#2bddc2"/></svg></div>
+          <div class="meta"><div class="name">Alex Morgan</div><div class="sub">Treadmill 04 · Cardio Zone</div></div>
+        </div>
+        <div class="header-icons">
+          <button class="icon-btn btn-press" onclick="go('leaderboard','member')" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/></svg></button>
+          <button class="icon-btn btn-press" onclick="logout()" aria-label="Log out" style="color:var(--coral);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+        </div>
+      </div>
+      <div class="scroll-area" style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div style="font-size:12.5px;font-weight:800;letter-spacing:.5px;color:var(--pink);">ASSIGNED BY JORDAN REYES · PERSONAL TRAINER</div>
+          <div class="display" style="font-size:23px;font-weight:600;margin-top:6px;">Tempo Build — Week 3</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-tile"><div class="l">Duration</div><div class="v">32 min</div></div>
+          <div class="stat-tile"><div class="l">Distance</div><div class="v">~6.8 km</div></div>
+          <div class="stat-tile"><div class="l">Target Zone</div><div class="v">Zone 4</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div class="step-row"><div class="step-num">1</div><div><div class="step-title">Warm-up</div><div class="step-sub">5 min easy pace</div></div></div>
+          <div class="step-row"><div class="step-num">2</div><div><div class="step-title">4 × Tempo Intervals</div><div class="step-sub">3 min @ 12.5 km/h / 2 min recovery</div></div></div>
+          <div class="step-row"><div class="step-num">3</div><div><div class="step-title">Cool-down</div><div class="step-sub">5 min easy pace</div></div></div>
+        </div>
+        <div>
+          <div class="section-label" style="margin-bottom:9px;">Tempo Build · Program</div>
+          <div style="display:flex;flex-direction:column;gap:7px;" id="programWeeks"></div>
+        </div>
+      </div>
+      <div style="padding:0 22px 22px;">
+        <button class="primary-btn btn-press" onclick="startSession()">Start workout</button>
+      </div>
+    </div>
+
+    <!-- ================= ACTIVE SESSION ================= -->
+    <div class="view" id="view-active">
+      <div class="topbar" style="padding-bottom:4px;">
+        <div class="member-id">
+          <div class="avatar"><svg viewBox="0 0 52 52"><rect width="52" height="52" fill="#2a1b55"/><circle cx="26" cy="20" r="10" fill="#2bddc2"/><path d="M5 54c0-14.4 9.4-23 21-23s21 8.6 21 23" fill="#2bddc2"/></svg></div>
+          <div class="meta"><div class="name">Alex Morgan</div><div class="sub">Treadmill 04 · Cardio Zone</div></div>
+        </div>
+        <button class="icon-btn btn-press" onclick="openOverlay('staffHelp')" aria-label="Call staff" style="color:var(--coral);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.7 17a2 2 0 001.7 3h15.2a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        </button>
+      </div>
+      <div class="scroll-area" style="display:flex;flex-direction:column;gap:13px;padding-top:4px;">
+        <div class="notice-banner" id="pbBanner" style="display:none;background:rgba(255,194,78,0.14);border-color:var(--gold);">
+          <span style="font-size:18px;">🏅</span>
+          <div style="font-size:12.5px;font-weight:700;color:var(--gold);">New personal best pace on this segment</div>
+        </div>
+        <div class="notice-banner" id="stageNotice" style="display:none;background:rgba(43,221,194,0.14);border-color:var(--teal);">
+          <span style="font-size:18px;">🔔</span>
+          <div>
+            <div id="stageNoticeText" style="font-size:13px;font-weight:700;color:var(--teal);"></div>
+            <div style="font-size:11px;color:var(--ink-faint);margin-top:1px;">Wristband buzzed · notification sent</div>
+          </div>
+        </div>
+
+        <div style="text-align:center;margin-top:4px;">
+          <div class="session-time-label">SESSION TIME</div>
+          <div class="session-time tabular" id="sessionTime">00:00</div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-tile"><div class="l">Distance</div><div class="v" id="statDistance">0.00 km</div></div>
+          <div class="stat-tile"><div class="l">Pace</div><div class="v" id="statPace">–:––/km</div></div>
+          <div class="stat-tile"><div class="l">Calories</div><div class="v" id="statCal">0</div></div>
+        </div>
+        <div class="hr-row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg>
+          <span style="font-size:13px;font-weight:600;">Heart rate zone 4 · 162 bpm</span>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:7px;"><span>Progress to today's target</span><span id="progressPct">0%</span></div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+        </div>
+        <div>
+          <div class="section-label" style="margin-bottom:9px;">Workout stages</div>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="stageRows"></div>
+        </div>
+      </div>
+      <div style="padding:0 22px 22px;">
+        <button class="primary-btn btn-press" style="background:linear-gradient(135deg,#ff6a5e,#ff5fa8);" onclick="endSession()">End session</button>
+      </div>
+    </div>
+
+    <!-- ================= SUMMARY ================= -->
+    <div class="view" id="view-summary">
+      <div class="topbar">
+        <div class="member-id">
+          <div class="avatar"><svg viewBox="0 0 52 52"><rect width="52" height="52" fill="#2a1b55"/><circle cx="26" cy="20" r="10" fill="#2bddc2"/><path d="M5 54c0-14.4 9.4-23 21-23s21 8.6 21 23" fill="#2bddc2"/></svg></div>
+          <div class="meta"><div class="name">Alex Morgan</div><div class="sub">Treadmill 04 · Cardio Zone</div></div>
+        </div>
+        <div class="header-icons">
+          <button class="icon-btn btn-press" onclick="go('leaderboard','member')" aria-label="Leaderboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 3M17 5h3a3 3 0 01-3 3"/></svg></button>
+          <button class="icon-btn btn-press" onclick="logout()" aria-label="Log out" style="color:var(--coral);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+        </div>
+      </div>
+      <div class="scroll-area" style="display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <div class="display" style="font-size:23px;font-weight:600;">Session complete</div>
+          <div style="font-size:13px;color:var(--ink-faint);margin-top:3px;">Great work, Alex — here's how it went</div>
+        </div>
+        <div class="celebrate-card">
+          <div class="celebrate-emoji" id="celebEmoji">🎉</div>
+          <div class="celebrate-msg" id="celebMsg">Great work today!</div>
+        </div>
+        <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="stat-tile"><div class="l">Total time</div><div class="v" id="sumTime">00:00</div></div>
+          <div class="stat-tile"><div class="l">Distance</div><div class="v" id="sumDist">0.00 km</div></div>
+          <div class="stat-tile"><div class="l">Avg pace</div><div class="v" id="sumPace">–:––/km</div></div>
+          <div class="stat-tile"><div class="l">Calories</div><div class="v" id="sumCal">0</div></div>
+        </div>
+        <div style="font-size:12px;color:var(--ink-faint);">Previous best pace on this machine: 4:55/km</div>
+        <div id="badgeArea" style="display:flex;flex-direction:column;gap:9px;"></div>
+        <div>
+          <div class="section-label" style="margin-bottom:9px;">Recent sessions</div>
+          <div style="display:flex;flex-direction:column;gap:8px;" id="summaryHistory"></div>
+        </div>
+      </div>
+      <div style="padding:0 22px 22px;display:flex;flex-direction:column;gap:11px;">
+        <button class="primary-btn btn-press" onclick="go('leaderboard','member')">View leaderboard</button>
+        <button class="ghost-btn btn-press" onclick="logout()">Log out</button>
+      </div>
+    </div>
+
+    <!-- ================= LEADERBOARD ================= -->
+    <div class="view" id="view-leaderboard">
+      <div class="topbar" id="lbHeader"></div>
+      <div class="scroll-area" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+          <div>
+            <div class="display" style="font-size:20px;font-weight:600;">Cardio Zone Leaderboard</div>
+            <div style="font-size:13px;font-weight:700;color:var(--pink);margin-top:3px;" id="lbDistLabel">Fastest 5K · Treadmill</div>
+          </div>
+          <button class="icon-btn btn-press" onclick="openOverlay('lbInfo')" aria-label="How rankings work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
+        </div>
+        <div class="tab-row" id="distTabs"></div>
+        <div class="tab-row" id="periodTabs"></div>
+        <div style="display:flex;flex-direction:column;gap:8px;" id="lbRows"></div>
+      </div>
+      <div style="padding:0 22px 22px;" id="lbFooterBtn"></div>
+    </div>
+
+    <!-- ================= LOGOUT ================= -->
+    <div class="view" id="view-logout" style="align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px;">
+      <div style="font-size:46px;">👋</div>
+      <div class="display" style="font-size:21px;font-weight:600;">Logged out</div>
+      <div style="font-size:13px;color:var(--ink-faint);">See you next time, Alex!</div>
+    </div>
+
+    <!-- ================= OVERLAYS ================= -->
+    <div class="overlay" id="ov-keypad" style="background:var(--surface);backdrop-filter:none;">
+      <div id="view-keypad" style="width:100%;height:100%;display:flex;flex-direction:column;">
+        <div class="keypad-top">
+          <button class="icon-btn btn-press" style="width:56px;height:56px;" onclick="openOverlay('idInfo')" aria-label="How to find your Member ID"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg></button>
+          <button class="icon-btn btn-press" style="width:56px;height:56px;" onclick="closeOverlay('keypad')" aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="keypad-mid">
+          <div style="text-align:center;">
+            <div class="id-display">Enter your Member ID</div>
+            <div class="id-dots tabular" id="idDots"></div>
+          </div>
+          <div class="pad-grid" id="padGrid"></div>
+          <div class="pad-grid">
+            <button class="pad-key btn-press" onclick="backspaceId()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><path d="M14 10l4 4M18 10l-4 4"/></svg></button>
+            <button class="pad-key btn-press" onclick="pressDigit('0')">0</button>
+            <button class="pad-key accent btn-press" id="continueBtn" onclick="continueId()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="ov-idInfo">
+      <div class="popup">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="display" style="font-size:18px;font-weight:600;">Finding your Member ID</div>
+          <button class="icon-btn btn-press" style="width:40px;height:40px;" onclick="closeOverlay('idInfo')" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div style="font-size:14.5px;line-height:1.6;color:var(--ink-soft);">Your Member ID lives in the NBM Fitness mobile app — open the app and go to your Profile tab. It's shown under your name, with a QR code you can hold up if a machine can't read your wristband.</div>
+        <div style="font-size:14.5px;line-height:1.6;color:var(--ink-faint);margin-top:12px;">Don't have the app yet, or can't get to your phone? A member of staff can look you up and log you in.</div>
+        <button class="primary-btn btn-press" style="margin-top:18px;" onclick="closeOverlay('idInfo')">Got it</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="ov-trainerNote">
+      <div class="popup">
+        <div style="display:flex;align-items:center;gap:13px;margin-bottom:14px;">
+          <div style="width:46px;height:46px;border-radius:50%;background:var(--grad-gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--gold-ink);flex-shrink:0;">JR</div>
+          <div style="flex:1;">
+            <div class="display" style="font-size:16px;font-weight:600;">Jordan Reyes</div>
+            <div style="font-size:12px;color:var(--ink-faint);">Personal Trainer · Cardio Specialist</div>
+          </div>
+          <button class="icon-btn btn-press" style="width:40px;height:40px;" onclick="closeOverlay('trainerNote')" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div style="font-size:15px;line-height:1.6;">Great progress on pace last week — let's push the tempo intervals today. I've bumped your target speed up slightly, so focus on holding form through the last interval rather than chasing the number.</div>
+        <button class="primary-btn btn-press" style="margin-top:16px;" onclick="closeOverlay('trainerNote')">Got it</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="ov-lbInfo">
+      <div class="popup">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="display" style="font-size:18px;font-weight:600;">How rankings work</div>
+          <button class="icon-btn btn-press" style="width:40px;height:40px;" onclick="closeOverlay('lbInfo')" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div style="font-size:14px;line-height:1.6;color:var(--ink-soft);">Rankings are your fastest time on this machine for the selected distance and period. Switch distance (1K–10K) or period (Daily–Annual) with the tabs above.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13.5px;font-weight:700;color:var(--teal);">▲ 2 &nbsp;Moving up the rankings</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13.5px;font-weight:700;color:var(--coral);">▼ 1 &nbsp;Moving down the rankings</div>
+        <button class="primary-btn btn-press" style="margin-top:16px;" onclick="closeOverlay('lbInfo')">Got it</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="ov-staffHelp">
+      <div class="popup" style="text-align:center;">
+        <div style="font-size:38px;margin-bottom:10px;">🙋</div>
+        <div class="display" style="font-size:18px;font-weight:600;">Calling a staff member…</div>
+        <div style="font-size:13.5px;color:var(--ink-faint);margin-top:8px;line-height:1.5;">Someone from the Riverside Fitness floor team has been notified and is on their way to Treadmill 04.</div>
+        <button class="primary-btn btn-press" style="margin-top:18px;" onclick="closeOverlay('staffHelp')">OK, thanks</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="ov-idleWarning">
+      <div class="popup" style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div class="idle-warning-ring" id="idleRing"><div class="inner tabular" id="idleCountdown">10</div></div>
+        <div class="display" style="font-size:18px;font-weight:600;">Still there?</div>
+        <div style="font-size:13px;color:var(--ink-faint);">This machine will log you out soon to free it up for the next member.</div>
+        <button class="primary-btn btn-press" onclick="dismissIdleWarning()">I'm still here</button>
+      </div>
+    </div>
+
+    <canvas id="confetti"></canvas>
+  </div>
+  <footer class="credit">NBM Fitness Pulse · interactive prototype</footer>
+</div>
+
+<script>
+/* ============================= DATA ============================= */
+const SESSION_HISTORY = [
+  { date:'Wed 19 Aug', distance:'5.2 km', duration:'27:40', pace:'5:19', isPb:false },
+  { date:'Sat 15 Aug', distance:'6.8 km', duration:'33:25', pace:'4:55', isPb:true },
+  { date:'Wed 12 Aug', distance:'4.5 km', duration:'24:05', pace:'5:21', isPb:false },
+  { date:'Sun 9 Aug',  distance:'6.1 km', duration:'31:47', pace:'5:12', isPb:false },
+  { date:'Thu 6 Aug',  distance:'5.0 km', duration:'26:58', pace:'5:24', isPb:false },
+];
+
+const PROGRAM_WEEKS = [
+  { week:1, summary:'Base Endurance — easy pace, longer runs', status:'done' },
+  { week:2, summary:'Interval Intro — short bursts at pace', status:'done' },
+  { week:3, summary:'Tempo Build — sustained tempo intervals', status:'current' },
+  { week:4, summary:'Speed Endurance — faster reps, shorter rest', status:'upcoming' },
+  { week:5, summary:'Peak Week — race-pace simulation', status:'upcoming' },
+];
+
+const SESSION_STAGES = [
+  { title:'Warm-up', subtitle:'5 min easy pace', endAt:8 },
+  { title:'4 × Tempo Intervals', subtitle:'3 min @ 12.5 km/h / 2 min recovery', endAt:24 },
+  { title:'Cool-down', subtitle:'5 min easy pace', endAt:34 },
+];
+
+const CELEBRATIONS = [
+  { emoji:'👍', message:'Solid session — your pacing was consistent from start to finish.' },
+  { emoji:'🎉', message:"Great work — that's a strong effort today!" },
+  { emoji:'😊', message:'Nice job — your consistency is really paying off.' },
+];
+
+const DISTANCES = [
+  { id:'1k', label:'1K', ratio:0.2 },
+  { id:'5k', label:'5K', ratio:1 },
+  { id:'8k', label:'8K', ratio:1.62 },
+  { id:'10k', label:'10K', ratio:2.05 },
+];
+
+const LEADERBOARD_5K = {
+  daily:   { rows:[
+    {rank:1,name:'Priya N.',time:'20:48',move:{dir:'up',n:1}},
+    {rank:2,name:'Alex Morgan',time:'22:14',move:{dir:'same'},isYou:true},
+    {rank:3,name:'Sam O.',time:'22:51',move:{dir:'down',n:1}},
+    {rank:4,name:'Marcus T.',time:'23:40',move:{dir:'new'}},
+    {rank:5,name:'Dee K.',time:'24:12',move:{dir:'up',n:2}},
+  ]},
+  weekly:  { rows:[
+    {rank:1,name:'Priya N.',time:'20:48',move:{dir:'up',n:2}},
+    {rank:2,name:'Marcus T.',time:'21:55',move:{dir:'up',n:3}},
+    {rank:3,name:'Alex Morgan',time:'22:14',move:{dir:'up',n:1},isYou:true},
+    {rank:4,name:'Sam O.',time:'22:51',move:{dir:'down',n:1}},
+    {rank:5,name:'Dee K.',time:'24:12',move:{dir:'down',n:2}},
+  ]},
+  monthly: { rows:[
+    {rank:1,name:'Priya N.',time:'20:30',move:{dir:'same'}},
+    {rank:2,name:'Sam O.',time:'21:40',move:{dir:'up',n:1}},
+    {rank:3,name:'Marcus T.',time:'21:55',move:{dir:'down',n:1}},
+    {rank:4,name:'Alex Morgan',time:'22:14',move:{dir:'same'},isYou:true},
+    {rank:5,name:'Dee K.',time:'23:58',move:{dir:'up',n:1}},
+  ]},
+  annual:  { rows:[
+    {rank:1,name:'Priya N.',time:'19:58',move:{dir:'same'}},
+    {rank:2,name:'Marcus T.',time:'21:05',move:{dir:'same'}},
+    {rank:3,name:'Sam O.',time:'21:40',move:{dir:'same'}},
+    {rank:4,name:'Alex Morgan',time:'22:02',move:{dir:'up',n:1},isYou:true},
+    {rank:5,name:'Dee K.',time:'23:10',move:{dir:'down',n:1}},
+  ]},
+};
+
+/* ============================= STATE ============================= */
+const state = {
+  screen:'idle',
+  idInput:'',
+  elapsedSeconds:0,
+  distanceKm:0,
+  calories:0,
+  stageIndex:0,
+  stageNotice:null,
+  celebration: CELEBRATIONS[0],
+  leaderboardOrigin:'idle',
+  leaderboardDistance:'5k',
+  leaderboardPeriod:'weekly',
+  idleCountdown:10,
+};
+let sessionTimer=null, stageNoticeTimer=null, idleTimer=null, tipTimer=null, verifyTimer=null, logoutTimer=null;
+
+/* ============================= HELPERS ============================= */
+function fmtTime(s){ const m=Math.floor(s/60), sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+function paceMinPerKm(sec,km){ if(km<=0) return 0; return (sec/60)/km; }
+function fmtPace(p){ if(!p) return '–:––'; const m=Math.floor(p), s=Math.round((p-m)*60); return m+':'+String(s).padStart(2,'0'); }
+function parseClock(t){ const [m,s]=t.split(':').map(Number); return m*60+s; }
+function scaleClock(t,ratio){ const total=Math.round(parseClock(t)*ratio); return fmtTime(total); }
+function go(screen, origin){
+  if(screen==='leaderboard') state.leaderboardOrigin = origin;
+  state.screen = screen;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+screen).classList.add('active');
+  if(screen==='leaderboard') renderLeaderboard();
+  if(screen==='welcome') renderWelcome();
+  if(screen==='plan') renderPlan();
+}
+function openOverlay(name){ document.getElementById('ov-'+name).classList.add('active'); if(name==='keypad'){ state.idInput=''; renderKeypad(); } }
+function closeOverlay(name){ document.getElementById('ov-'+name).classList.remove('active'); }
+function closeInfoScreen(){
+  document.getElementById('videoPlayBtn').innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>';
+  clearInterval(window._vidTimer); window._vidPlaying=false;
+  const bar=document.getElementById('videoBar'); if(bar) bar.style.width='0%';
+  go(state.infoReturnTo || 'idle');
+}
+
+/* ============================= IDLE ============================= */
+const TIPS = [
+  { text:'128 sessions logged today', color:'var(--teal)' },
+  { text:'Tip: rehydrate between intervals', color:'var(--pink)' },
+  { text:'New: Tempo Build program now available', color:'var(--gold)' },
+];
+let tipIdx=0;
+function cycleTip(){
+  const chip = document.getElementById('tipChip');
+  chip.style.animation='none'; void chip.offsetWidth; chip.style.animation='tipCycle .5s ease';
+  tipIdx=(tipIdx+1)%TIPS.length;
+  chip.textContent=TIPS[tipIdx].text; chip.style.color=TIPS[tipIdx].color;
+}
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clockText').textContent = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById('dateText').textContent = now.toLocaleDateString([], {weekday:'long', day:'numeric', month:'long'});
+}
+tickClock(); setInterval(tickClock, 15000);
+tipTimer = setInterval(cycleTip, 4000);
+
+function startScan(){
+  go('verifying');
+  clearTimeout(verifyTimer);
+  verifyTimer = setTimeout(()=>{ go('welcome'); }, 1300);
+}
+
+/* ============================= KEYPAD ============================= */
+function renderKeypad(){
+  document.getElementById('idDots').textContent = state.idInput.padEnd(4,'•').split('').join(' ');
+  const grid = document.getElementById('padGrid');
+  grid.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9'].forEach(d=>{
+    const b=document.createElement('button');
+    b.className='pad-key btn-press'; b.textContent=d; b.onclick=()=>pressDigit(d);
+    grid.appendChild(b);
+  });
+  document.getElementById('continueBtn').style.opacity = state.idInput.length>0 ? '1':'.45';
+}
+function pressDigit(d){ if(state.idInput.length<4){ state.idInput+=d; renderKeypad(); } }
+function backspaceId(){ state.idInput=state.idInput.slice(0,-1); renderKeypad(); }
+function continueId(){ if(state.idInput.length===0) return; closeOverlay('keypad'); startScan(); }
+
+/* ============================= WELCOME / PLAN render ============================= */
+function renderWelcome(){
+  const box = document.getElementById('welcomeHistory');
+  box.innerHTML = SESSION_HISTORY.map(h=>`
+    <div class="hist-row">
+      <div><div class="d">${h.date}</div><div class="s">${h.distance} · ${h.duration} · ${h.pace}/km</div></div>
+      ${h.isPb?'<div class="pb-badge">PB</div>':''}
+    </div>`).join('');
+}
+function renderPlan(){
+  const styleFor = (status)=>{
+    if(status==='done') return {bg:'rgba(43,221,194,0.12)', border:'rgba(43,221,194,0.4)', num:'var(--teal)', title:'var(--ink-soft)', chipBg:'var(--teal)', chipColor:'var(--teal-ink)', chipLabel:'COMPLETED', dash:'solid'};
+    if(status==='current') return {bg:'rgba(145,99,255,0.18)', border:'var(--violet)', num:'var(--violet)', title:'var(--ink)', chipBg:'var(--grad-cta)', chipColor:'#fff', chipLabel:'IN PROGRESS', dash:'solid'};
+    return {bg:'rgba(255,255,255,0.04)', border:'rgba(255,255,255,0.14)', num:'var(--ink-faint)', title:'var(--ink-faint)', chipBg:'rgba(255,255,255,0.1)', chipColor:'var(--ink-faint)', chipLabel:'LOCKED', dash:'dashed'};
+  };
+  const box = document.getElementById('programWeeks');
+  box.innerHTML = PROGRAM_WEEKS.map(w=>{
+    const s = styleFor(w.status);
+    return `<div class="week-row" style="background:${s.bg};border:1.5px ${s.dash} ${s.border};">
+      <div style="width:36px;flex-shrink:0;"><div class="week-num-label">WEEK</div><div class="week-num" style="color:${s.num};">${w.week}</div></div>
+      <div style="flex:1;font-size:13.5px;font-weight:700;color:${s.title};">${w.summary}</div>
+      <div class="stage-chip" style="background:${s.chipBg};color:${s.chipColor};">${s.chipLabel}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================= ACTIVE SESSION ============================= */
+function startSession(){
+  go('active');
+  state.elapsedSeconds=0; state.distanceKm=0; state.calories=0; state.stageIndex=0; state.stageNotice=null;
+  document.getElementById('pbBanner').style.display='none';
+  document.getElementById('stageNotice').style.display='none';
+  renderStages(); tickSession();
+  clearInterval(sessionTimer);
+  sessionTimer = setInterval(tickSession, 1000);
+}
+function renderStages(){
+  const box=document.getElementById('stageRows');
+  box.innerHTML = SESSION_STAGES.map((st,i)=>{
+    const status = i<state.stageIndex?'done':(i===state.stageIndex?'current':'upcoming');
+    const s = status==='done'
+      ? {bg:'rgba(43,221,194,0.12)',border:'rgba(43,221,194,0.4)',num:'var(--teal)',numBg:'rgba(43,221,194,0.22)',title:'var(--ink-soft)',chipBg:'var(--teal)',chipColor:'var(--teal-ink)',label:'DONE',dash:'solid'}
+      : status==='current'
+      ? {bg:'rgba(145,99,255,0.18)',border:'var(--violet)',num:'#fff',numBg:'var(--grad-cta)',title:'var(--ink)',chipBg:'var(--grad-cta)',chipColor:'#fff',label:'IN PROGRESS',dash:'solid'}
+      : {bg:'rgba(255,255,255,0.04)',border:'rgba(255,255,255,0.14)',num:'var(--ink-faint)',numBg:'rgba(255,255,255,0.08)',title:'var(--ink-faint)',chipBg:'rgba(255,255,255,0.1)',chipColor:'var(--ink-faint)',label:'UPCOMING',dash:'dashed'};
+    const numContent = status==='done' ? '✓' : (i+1);
+    return `<div class="step-row" style="background:${s.bg};border:1.5px ${s.dash} ${s.border};">
+      <div class="step-num" style="background:${s.numBg};color:${s.num};">${numContent}</div>
+      <div style="flex:1;"><div class="step-title" style="color:${s.title};">${st.title}</div><div class="step-sub">${st.subtitle}</div></div>
+      <div class="stage-chip" style="background:${s.chipBg};color:${s.chipColor};">${s.label}</div>
+    </div>`;
+  }).join('');
+}
+function tickSession(){
+  state.elapsedSeconds++;
+  state.distanceKm += 0.00243;
+  state.calories += 0.13;
+  const pace = paceMinPerKm(state.elapsedSeconds, state.distanceKm);
+  document.getElementById('sessionTime').textContent = fmtTime(state.elapsedSeconds);
+  document.getElementById('statDistance').textContent = state.distanceKm.toFixed(2)+' km';
+  document.getElementById('statPace').textContent = fmtPace(pace)+'/km';
+  document.getElementById('statCal').textContent = Math.round(state.calories);
+  const pct = Math.min(100, Math.round((state.distanceKm/6.8)*100));
+  document.getElementById('progressPct').textContent = pct+'%';
+  document.getElementById('progressFill').style.width = pct+'%';
+  if(state.elapsedSeconds===15){ document.getElementById('pbBanner').style.display='flex'; }
+
+  const current = SESSION_STAGES[state.stageIndex];
+  if(current && state.stageIndex < SESSION_STAGES.length-1 && state.elapsedSeconds >= current.endAt){
+    const next = SESSION_STAGES[state.stageIndex+1];
+    state.stageIndex++;
+    renderStages();
+    document.getElementById('stageNoticeText').textContent = current.title+' complete — starting '+next.title;
+    document.getElementById('stageNotice').style.display='flex';
+    clearTimeout(stageNoticeTimer);
+    stageNoticeTimer = setTimeout(()=>{ document.getElementById('stageNotice').style.display='none'; }, 4200);
+  }
+}
+function endSession(){
+  clearInterval(sessionTimer);
+  clearTimeout(stageNoticeTimer);
+  document.getElementById('stageNotice').style.display='none';
+  state.celebration = CELEBRATIONS[Math.floor(Math.random()*CELEBRATIONS.length)];
+  renderSummary();
+  go('summary');
+  launchConfetti();
+}
+function renderSummary(){
+  const pace = paceMinPerKm(state.elapsedSeconds, state.distanceKm);
+  const newPb = state.distanceKm>0 && pace < 4.9167;
+  const targetMet = state.distanceKm >= 6.8;
+  document.getElementById('celebEmoji').textContent = state.celebration.emoji;
+  document.getElementById('celebMsg').textContent = state.celebration.message;
+  document.getElementById('sumTime').textContent = fmtTime(state.elapsedSeconds);
+  document.getElementById('sumDist').textContent = state.distanceKm.toFixed(2)+' km';
+  document.getElementById('sumPace').textContent = fmtPace(pace)+'/km';
+  document.getElementById('sumCal').textContent = Math.round(state.calories);
+
+  const badges=[];
+  if(newPb) badges.push(`<div class="badge-row" style="background:rgba(255,194,78,0.14);border:1.5px solid var(--gold);"><span style="font-size:18px;">🏅</span><span style="font-weight:700;font-size:13.5px;color:var(--gold);">New personal best · Average pace</span></div>`);
+  if(targetMet) badges.push(`<div class="badge-row" style="background:rgba(43,221,194,0.14);border:1.5px solid var(--teal);"><span style="font-size:18px;">✅</span><span style="font-weight:700;font-size:13.5px;color:var(--teal);">Trainer target met</span></div>`);
+  document.getElementById('badgeArea').innerHTML = badges.join('');
+
+  const rows = [
+    { date:'Today', distance:state.distanceKm.toFixed(2)+' km', duration:fmtTime(state.elapsedSeconds), pace:fmtPace(pace), isPb:newPb, today:true },
+    ...SESSION_HISTORY.slice(0,4)
+  ];
+  document.getElementById('summaryHistory').innerHTML = rows.map(h=>`
+    <div class="hist-row" style="${h.today?'border-color:var(--violet);background:rgba(145,99,255,0.1);':''}">
+      <div><div class="d" style="${h.today?'color:var(--violet);':''}">${h.date}</div><div class="s">${h.distance} · ${h.duration} · ${h.pace}/km</div></div>
+      ${h.isPb?'<div class="pb-badge">PB</div>':''}
+    </div>`).join('');
+}
+
+/* ============================= LEADERBOARD ============================= */
+function moveDisplay(move){
+  if(!move || move.dir==='same') return `<span style="color:var(--ink-faint);">–</span>`;
+  if(move.dir==='new') return `<span style="color:var(--gold);font-size:9.5px;font-weight:800;">NEW</span>`;
+  if(move.dir==='up') return `<span style="color:var(--teal);">▲${move.n}</span>`;
+  return `<span style="color:var(--coral);">▼${move.n}</span>`;
+}
+function renderLeaderboard(){
+  const isPublic = state.leaderboardOrigin==='idle';
+  document.getElementById('lbHeader').innerHTML = isPublic
+    ? `<div class="display" style="font-size:16px;font-weight:600;">📍 Riverside Fitness · Cardio Zone</div><button class="icon-btn btn-press" onclick="go('idle')" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>`
+    : `<div class="member-id"><div class="avatar"><svg viewBox="0 0 52 52"><rect width="52" height="52" fill="#2a1b55"/><circle cx="26" cy="20" r="10" fill="#2bddc2"/><path d="M5 54c0-14.4 9.4-23 21-23s21 8.6 21 23" fill="#2bddc2"/></svg></div><div class="meta"><div class="name">Alex Morgan</div><div class="sub">Treadmill 04 · Cardio Zone</div></div></div><button class="icon-btn btn-press" onclick="logout()" aria-label="Log out" style="color:var(--coral);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>`;
+
+  document.getElementById('distTabs').innerHTML = DISTANCES.map(d=>`<button class="tab-btn btn-press ${state.leaderboardDistance===d.id?'on':''}" onclick="selectDist('${d.id}')">${d.label}</button>`).join('');
+  const periods=['daily','weekly','monthly','annual'];
+  document.getElementById('periodTabs').innerHTML = periods.map(p=>`<button class="tab-btn btn-press ${state.leaderboardPeriod===p?'on':''}" onclick="selectPeriod('${p}')">${p[0].toUpperCase()+p.slice(1)}</button>`).join('');
+
+  const distMeta = DISTANCES.find(d=>d.id===state.leaderboardDistance);
+  document.getElementById('lbDistLabel').textContent = 'Fastest '+distMeta.label+' · Treadmill';
+
+  const base = LEADERBOARD_5K[state.leaderboardPeriod];
+  document.getElementById('lbRows').innerHTML = base.rows.map(r=>`
+    <div class="lb-row" style="${r.isYou?'border-color:var(--violet);background:rgba(145,99,255,0.12);':''}">
+      <div class="lb-rank">${r.rank}</div>
+      <div class="lb-name">${r.name}${r.isYou?'<span class="you-tag">YOU</span>':''}</div>
+      <div class="lb-move">${moveDisplay(r.move)}</div>
+      <div class="lb-time tabular">${scaleClock(r.time, distMeta.ratio)}</div>
+    </div>`).join('');
+
+  document.getElementById('lbFooterBtn').innerHTML = isPublic
+    ? `<button class="ghost-btn btn-press" onclick="go('idle')">Back to home screen</button>`
+    : `<button class="ghost-btn btn-press" onclick="logout()">Log out</button>`;
+}
+function selectDist(id){ state.leaderboardDistance=id; renderLeaderboard(); }
+function selectPeriod(p){ state.leaderboardPeriod=p; renderLeaderboard(); }
+
+/* ============================= VIDEO TOGGLE ============================= */
+function toggleVideo(){
+  const btn=document.getElementById('videoPlayBtn');
+  const bar=document.getElementById('videoBar');
+  if(window._vidPlaying){
+    window._vidPlaying=false; clearInterval(window._vidTimer);
+    btn.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>';
+  } else {
+    window._vidPlaying=true;
+    btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+    let pct=parseFloat(bar.style.width)||0;
+    clearInterval(window._vidTimer);
+    window._vidTimer=setInterval(()=>{ pct+=1; if(pct>100){pct=100; clearInterval(window._vidTimer);} bar.style.width=pct+'%'; },100);
+  }
+}
+
+/* ============================= LOGOUT / IDLE WARNING ============================= */
+function logout(){
+  clearInterval(sessionTimer); clearTimeout(stageNoticeTimer); clearInterval(idleTimer);
+  go('logout');
+  clearTimeout(logoutTimer);
+  logoutTimer=setTimeout(()=>{ go('idle'); }, 1600);
+}
+function triggerIdleWarning(){
+  state.idleCountdown=10;
+  document.getElementById('idleCountdown').textContent=state.idleCountdown;
+  document.getElementById('idleRing').style.setProperty('--pct', 100);
+  openOverlay('idleWarning');
+  clearInterval(idleTimer);
+  idleTimer=setInterval(()=>{
+    state.idleCountdown--;
+    document.getElementById('idleCountdown').textContent=state.idleCountdown;
+    document.getElementById('idleRing').style.setProperty('--pct', state.idleCountdown*10);
+    if(state.idleCountdown<=0){ clearInterval(idleTimer); closeOverlay('idleWarning'); logout(); }
+  },1000);
+}
+function dismissIdleWarning(){ clearInterval(idleTimer); closeOverlay('idleWarning'); }
+
+/* ============================= CONFETTI ============================= */
+function launchConfetti(){
+  const canvas=document.getElementById('confetti');
+  const screenEl=document.getElementById('screen');
+  canvas.width=screenEl.clientWidth; canvas.height=screenEl.clientHeight;
+  const ctx=canvas.getContext('2d');
+  const colors=['#9163ff','#ff5fa8','#2bddc2','#ffc24e'];
+  const parts=Array.from({length:70},()=>({
+    x:Math.random()*canvas.width, y:-20-Math.random()*120,
+    vx:(Math.random()-0.5)*2.2, vy:2+Math.random()*2.6,
+    size:5+Math.random()*5, color:colors[Math.floor(Math.random()*colors.length)],
+    rot:Math.random()*360, vr:(Math.random()-0.5)*10,
+  }));
+  let frame=0;
+  function tick(){
+    frame++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    parts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.6);
+      ctx.restore();
+    });
+    if(frame<130) requestAnimationFrame(tick); else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  tick();
+}
+
+/* ============================= INIT ============================= */
+renderWelcome();
+renderKeypad();
+renderLeaderboard();
+// small idle-warning demo trigger, invoked from console/testing hook only
+window.__demoIdleWarning = triggerIdleWarning;
+</script>
+</body>
+</html>
